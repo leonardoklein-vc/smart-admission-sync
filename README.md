@@ -18,10 +18,7 @@ O processo era inteiramente manual e visual:
 * Identificar pacientes que foram cancelados ou removidos da lista original.
 
 Além do tempo exaustivo, o cansaço visual gerava um alto risco de falha humana em dados críticos.
-
-*(Abaixo: A visão anterior — uma planilha crua e dependente de formatação manual)*
-<br>
-`image_62f1b7.png`
+<img width="1647" height="955" alt="190340b6-687b-406d-8cb5-01ebf429e461" src="https://github.com/user-attachments/assets/044a73b9-1a01-4e53-a336-ef1abfb763da" />
 
 ---
 
@@ -38,20 +35,14 @@ Ao invés de copiar e colar, o usuário clica em "Coletar Informações". O scri
 * 🟢 **NOVOS:** Pacientes que estão na cirurgia, mas não na internação (Sugere: *Inserir*).
 * 🟣 **ALTERADOS:** Pacientes que já existem em ambas, mas com divergências de horário, convênio ou equipe (Sugere: *Atualizar com checkbox granular do que aceitar*).
 * 🔴 **REMOVIDOS:** Pacientes que sumiram da lista cirúrgica (Sugere: *Excluir*).
-
-*(Abaixo: O Motor de Sincronização em ação)*
-<br>
-`image_62f57d.png`
+<img width="1547" height="1017" alt="d83efbcf-ded2-4635-993d-d3ee24e8a911" src="https://github.com/user-attachments/assets/862106e8-4ea1-43f1-a9e9-2ef6de4b5234" />
 
 #### 2. Dashboard de Gestão (UI/UX)
 A interface transforma a planilha em um software real.
 * **Agenda Visual:** Tabela interativa com dropdowns de status coloridos.
 * **Gestão de Leitos:** Visão clara de leitos indisponíveis e mapa de disponibilidades por andar.
 * **Indicadores em Tempo Real:** Cards dinâmicos mostrando volumes de transferências e ocupação do dia.
-
-*(Abaixo: A nova interface da aplicação)*
-<br>
-`image_62f4c1.png`
+<img width="1537" height="1023" alt="ChatGPT Image 30 de jun  de 2026, 09_47_39" src="https://github.com/user-attachments/assets/a91f65b7-63ab-4c3e-9916-fe41341ce462" />
 
 ---
 
