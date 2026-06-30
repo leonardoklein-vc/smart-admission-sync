@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;700&display=swap" rel="stylesheet">
+    <?!= include('Stylesheet'); ?>
+  </head>
+  <body class="theme-default">
+
+    <div id="loading" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(255,255,255,0.95);z-index:2000;display:flex;justify-content:center;align-items:center;">
+      <div class="text-center">
+         <div class="spinner-border text-primary" role="status"></div>
+         <div class="small mt-2 fw-bold text-secondary">Carregando Sistema...</div>
+      </div>
+    </div>
+
+    <div class="sidebar">
+      <h6 class="fw-bold text-uppercase mb-4 text-white ls-1 ps-2">
+        <i class="bi bi-hospital-fill me-2"></i>Gestão Leitos
+      </h6>
+      
+      <div class="mb-4 px-2">
+        <label class="small text-white-50 fw-bold mb-1">DATA ATIVA</label>
+        <select id="sheetSelector" class="form-select form-select-sm bg-secondary text-white border-0 shadow-none" onchange="loadSheetData()">
+          <option>Iniciando...</option>
+        </select>
+      </div>
+
+      <nav class="nav flex-column mb-auto px-2">
+        <a class="nav-link active" id="btn-view-agenda" onclick="showView('agenda')">
+          <i class="bi bi-person-lines-fill me-2"></i>Agenda Internação
+        </a>
+        <a class="nav-link" id="btn-view-leitos" onclick="showView('leitos')">
+          <i class="bi bi-grid-3x3-gap-fill me-2"></i>Gestão de Leitos
+        </a>
+        <a class="nav-link" id="btn-view-transfers" onclick="showView('transfers')">
+          <i class="bi bi-arrow-left-right me-2"></i>Transferências
+        </a>
+        <a class="nav-link" id="btn-view-indicators" onclick="showView('indicators')">
+          <i class="bi bi-bar-chart-fill me-2"></i>Indicadores do Dia
+        </a>
+      </nav>
+      
+      <div class="legend-box mx-2 mb-3">
+        <div class="fw-bold mb-2 text-white-50 border-bottom border-secondary pb-1" style="font-size: 10px;">TIPOS DE INTERNAÇÃO</div>
+        <div id="legendContainer">
+           <span class="text-muted small">Carregando...</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="main-content">
+      
+      <div class="top-bar d-flex justify-content-between align-items-center">
+        <h5 id="pageTitle" class="m-0 fw-bold">Agenda Diária</h5>
+        <div>
+           <button class="btn btn-sm btn-surgical shadow-sm me-1" onclick="openImportModal()" title="Importar cirurgias do Bloco/CCA">
+             <i class="bi bi-cloud-download-fill"></i> Coletar/Atualizar Informações
+           </button>
+           <button class="btn btn-sm btn-primary shadow-sm" onclick="openModal()">
+             <i class="bi bi-plus-lg"></i> Novo Paciente
+           </button>
+           <button class="btn btn-sm btn-outline-secondary ms-1" onclick="loadSheetData()" title="Recarregar">
+             <i class="bi bi-arrow-clockwise"></i>
+           </button>
+        </div>
+      </div>
+
+      <div class="content-area">
+        
+        <div id="view-agenda" class="view-section active-view">
+          <div class="card-view" style="flex: 1; min-height: 0;">
+            <div class="table-responsive h-100">
+              <table class="table-compact table-hover w-100">
+                <thead>
+                  <tr>
+                    <th style="width:18%">TIPO / STATUS</th>
+                    <th style="width:20%">PACIENTE</th>
+                    <th style="width:8%">LEITO</th>
+                    <th style="width:10%">CONVÊNIO</th>
+                    <th style="width:10%">EQUIPE</th>
+                    <th style="width:8%">H. CIR</th>
+                    <th style="width:20%">OBSERVAÇÕES</th>
+                    <th style="width:6%" class="text-end">AÇÕES</th>
+                  </tr>
+                </thead>
+                <tbody id="tableBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div id="view-leitos" class="view-section">
+          <div class="row g-3 h-100">
+            <div class="col-md-5 h-100">
+              <div class="card-view">
+                <div class="panel-header text-danger justify-content-between">
+                   <span><i class="bi bi-slash-circle me-2"></i> Leitos Indisponíveis</span>
+                   <button class="btn btn-sm btn-outline-danger py-0" style="font-size:10px;" onclick="openCopyBedsModal()">
+                     <i class="bi bi-copy"></i> Copiar de...
+                   </button>
+                </div>
+                <div class="overflow-auto flex-grow-1">
+                  <table class="table table-sm table-striped m-0" style="font-size:11px;">
+                    <thead class="table-light sticky-top"><tr><th>Leito</th><th>Motivo</th></tr></thead>
+                    <tbody id="unavailableBody"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-7 h-100">
+              <div class="card-view">
+                <div class="panel-header text-success"><i class="bi bi-check-circle me-2"></i> Disponibilidades</div>
+                <div class="overflow-auto flex-grow-1 p-1">
+                   <div id="availabilitiesGrid" class="avail-grid"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="view-transfers" class="view-section">
+          <div class="card-view" style="flex: 1; min-height: 0;">
+            <div class="panel-header text-primary"><i class="bi bi-arrow-left-right me-2"></i> Central de Transferências</div>
+            <div class="table-responsive h-100">
+              <table class="table-compact table-hover w-100">
+                 <thead class="table-light sticky-top">
+                   <tr>
+                     <th style="width:30%">Paciente</th>
+                     <th style="width:20%">De &rarr; Para</th>
+                     <th style="width:50%">Observação Detalhada</th>
+                   </tr>
+                 </thead>
+                 <tbody id="transfersBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div id="view-indicators" class="view-section">
+           <div class="card-view" style="flex: 1; min-height: 0;">
+              <div class="panel-header text-dark"><i class="bi bi-bar-chart-line-fill me-2"></i> Dashboard de Indicadores do Dia</div>
+              <div class="stats-grid" id="statsContainer"></div>
+           </div>
+        </div>
+
+      </div>
+
+      <div class="bottom-bar">
+        <div class="d-flex align-items-center">
+          <span class="me-2 fw-bold small">TEMA:</span>
+          <div class="theme-btn" style="background:#f4f6f9;" onclick="setTheme('default')" title="Padrão"></div>
+          <div class="theme-btn" style="background:#2c3e50;" onclick="setTheme('dark')" title="Escuro"></div>
+          <div class="theme-btn" style="background:#198754;" onclick="setTheme('green')" title="Verde SAMIS"></div>
+          <div class="theme-btn" style="background:#9c27b0;" onclick="setTheme('purple')" title="Roxo"></div>
+          <div class="theme-btn" style="background:#000; border-color:#ffeb3b" onclick="setTheme('contrast')" title="Contraste"></div>
+        </div>
+        <div class="fw-bold small">
+          Feito por <span class="text-primary">Leonardo Klein (SAMIS)</span>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="modal fade" id="copyBedsModal" tabindex="-1">
+      <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+          <div class="modal-header py-2 bg-light">
+            <h6 class="modal-title fw-bold">Copiar Leitos Indisp.</h6>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <label class="small text-muted mb-1">Selecione a data de origem:</label>
+            <select id="copySourceDate" class="form-select form-select-sm"></select>
+          </div>
+          <div class="modal-footer py-1 bg-light">
+            <button type="button" class="btn btn-sm btn-primary w-100" onclick="confirmCopyBeds()">Copiar Agora</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade" id="patientModal" tabindex="-1">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header py-2 bg-light">
+            <h6 class="modal-title fw-bold text-dark">Dados do Paciente</h6>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <form id="patientForm">
+              <input type="hidden" id="rowIndex">
+              <div class="row g-2">
+                <div class="col-12 mb-2">
+                   <label class="form-label small fw-bold mb-0 text-dark">Status Inicial</label>
+                   <select id="tipoCor" class="form-select form-select-sm fw-bold border-2"></select>
+                </div>
+                <div class="col-md-6"><label class="small fw-bold">Nome</label><input type="text" class="form-control form-control-sm" id="nome" required></div>
+                <div class="col-md-3"><label class="small fw-bold">Telefone</label><input type="text" class="form-control form-control-sm" id="telefone"></div>
+                <div class="col-md-3"><label class="small fw-bold">Data Intern.</label><input type="text" class="form-control form-control-sm" id="diaIntern"></div>
+                <div class="col-md-3"><label class="small fw-bold">Prev. Leito</label><input type="text" class="form-control form-control-sm" id="prevLeito"></div>
+                <div class="col-md-3"><label class="small fw-bold">Leito Real</label><input type="text" class="form-control form-control-sm" id="leito"></div>
+                <div class="col-md-6"><label class="small fw-bold">Convênio</label><input type="text" class="form-control form-control-sm" id="convenio"></div>
+                <div class="col-md-6"><label class="small fw-bold">Equipe</label><input type="text" class="form-control form-control-sm" id="equipe"></div>
+                <div class="col-md-3"><label class="small fw-bold">Hr Cir</label><input type="text" class="form-control form-control-sm" id="hrCir"></div>
+                <div class="col-md-3"><label class="small fw-bold">Hr Int</label><input type="text" class="form-control form-control-sm" id="hrInt"></div>
+                <div class="col-md-4"><label class="small fw-bold">Guia</label><input type="text" class="form-control form-control-sm" id="guia"></div>
+                <div class="col-md-4"><label class="small fw-bold">Status Guia</label><input type="text" class="form-control form-control-sm" id="statusGuia"></div>
+                <div class="col-12"><label class="small fw-bold">Observações</label><input type="text" class="form-control form-control-sm" id="obs"></div>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer py-1 bg-light">
+            <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="button" class="btn btn-sm btn-primary" onclick="submitForm()">Salvar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade" id="importModal" tabindex="-1">
+      <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+          <div class="modal-header py-2 bg-surgical text-white">
+            <h6 class="modal-title fw-bold"><i class="bi bi-arrow-repeat"></i> Coletar & Atualizar Dados</h6>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body bg-light">
+            <div class="alert alert-white border shadow-sm p-2 mb-3 small">
+               <i class="bi bi-info-circle-fill text-primary"></i> 
+               Comparando agenda cirúrgica com a data: <strong id="importDateDisplay">---</strong>.
+               <span class="text-muted ms-2">Itens idênticos foram ocultados automaticamente.</span>
+            </div>
+
+            <div class="card-view p-0" style="max-height: 500px; overflow-y: auto;">
+               <table class="table table-sm table-hover m-0 align-middle" style="font-size:11px;">
+                 <thead class="table-light sticky-top" style="z-index:5;">
+                   <tr>
+                     <th style="width:30px;"><input type="checkbox" id="checkAllImport" checked onclick="toggleAllImport(this)"></th>
+                     <th style="width:80px;">Status</th>
+                     <th>Paciente</th>
+                     <th>Detalhes / Divergências</th>
+                     <th style="width:100px;" class="text-end">Ação</th>
+                   </tr>
+                 </thead>
+                 <tbody id="comparisonBody">
+                    <tr><td colspan="5" class="text-center p-4 text-muted">Clique em "Analisar Dados" para começar.</td></tr>
+                 </tbody>
+               </table>
+            </div>
+          </div>
+          <div class="modal-footer py-2 bg-white">
+            <button type="button" class="btn btn-sm btn-outline-primary" onclick="runAnalysis()">
+               <i class="bi bi-search"></i> Analisar Dados
+            </button>
+            <button type="button" class="btn btn-sm btn-surgical" id="btnExecuteSync" onclick="executeSync()" disabled>
+               <i class="bi bi-check-circle-fill"></i> Confirmar Alterações
+            </button>
+            <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Fechar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+      let currentSheet = "";
+      let availableTypes = [];
+      let allSheetsCache = []; // Cache das abas para o modal de cópia
+      let importedPatientsCache = [];
+
+      window.onload = function() {
+        google.script.run.withFailureHandler(onFailure).withSuccessHandler(initApp).getInitialData();
+      };
+
+      function onFailure(e) {
+        document.getElementById('loading').innerHTML = `<div class="alert alert-danger shadow p-4 text-center"><h5>Erro</h5><p>${e.message}</p></div>`;
+      }
+
+      function initApp(data) {
+        availableTypes = data.types;
+        allSheetsCache = data.sheets; // Guarda lista de abas
+        const sel = document.getElementById('sheetSelector');
+        sel.innerHTML = "";
+        
+        if(data.sheets.length === 0) { 
+           sel.innerHTML = "<option>Nenhuma aba</option>"; 
+           document.getElementById('loading').style.display='none'; 
+           return; 
+        }
+        
+        data.sheets.forEach(n => {
+          let opt = document.createElement('option'); 
+          opt.value = n; 
+          opt.text = n;
+          sel.add(opt);
+        });
+
+        if (data.active && data.sheets.includes(data.active)) {
+           sel.value = data.active;
+        }
+
+        renderLegend();
+        const modalSel = document.getElementById('tipoCor');
+        modalSel.innerHTML = "";
+        availableTypes.forEach(t => {
+           let textColor = isDarkColor(t.hex) ? '#ffffff' : '#000000';
+           let opt = document.createElement('option');
+           opt.value = t.key; opt.text = t.label; opt.style.backgroundColor = t.hex; opt.style.color = textColor;
+           modalSel.add(opt);
+        });
+
+        loadSheetData();
+      }
+
+      function setTheme(theme) {
+        document.body.className = ''; 
+        if (theme !== 'default') document.body.classList.add('theme-' + theme);
+      }
+
+      function renderLegend() {
+        const legCont = document.getElementById('legendContainer');
+        legCont.innerHTML = "";
+        availableTypes.forEach(t => {
+           legCont.innerHTML += `<div class="legend-item"><div class="legend-color" style="background-color: ${t.hex}"></div><div class="text-truncate" title="${t.label}">${t.label}</div></div>`;
+        });
+      }
+
+      function loadSheetData() {
+        const sel = document.getElementById('sheetSelector');
+        if(!sel.value) return;
+        document.getElementById('loading').style.display = 'flex';
+        currentSheet = sel.value;
+        document.getElementById('pageTitle').innerText = "Agenda: " + currentSheet;
+        google.script.run.withFailureHandler(onFailure).withSuccessHandler(renderDashboard).getSheetData(currentSheet);
+      }
+
+      function renderDashboard(data) {
+        window.globalPatients = data.patients;
+
+        // Agenda
+        const tbody = document.getElementById('tableBody');
+        tbody.innerHTML = "";
+        if(data.patients.length === 0) tbody.innerHTML = `<tr><td colspan="8" class="text-center py-5 text-muted">Nenhum paciente.</td></tr>`;
+        else {
+          data.patients.forEach(p => {
+             let optionsHtml = availableTypes.map(t => {
+                let selected = (t.key === p.tipo) ? 'selected' : '';
+                return `<option value="${t.key}" ${selected}>${t.label}</option>`;
+             }).join('');
+             let fontColor = p.corFonte || (isDarkColor(p.corFundo) ? '#ffffff' : '#000000');
+             let rowStyle = `background-color: ${p.corFundo}; color: ${fontColor};`;
+             let selectStyle = `background-color: rgba(255,255,255,0.25); color: inherit; border: 1px solid ${fontColor};`;
+
+             tbody.innerHTML += `
+               <tr id="row-${p.rowIndex}" style="${rowStyle}">
+                 <td><select class="status-select" style="${selectStyle}" onchange="changeStatus(this, ${p.rowIndex})">${optionsHtml}</select></td>
+                 <td class="fw-bold text-truncate" style="max-width: 180px;">${p.nome}</td>
+                 <td>${p.leito || p.prevLeito || ''}</td>
+                 <td>${p.convenio}</td>
+                 <td>${p.equipe}</td>
+                 <td>${p.hrCir || ''}</td>
+                 <td class="text-truncate" style="max-width: 150px;" title="${p.obs}">${p.obs || ''}</td>
+                 <td class="text-end">
+                   <button class="btn btn-sm btn-link p-0 me-2" style="color:inherit" onclick="editPatient(${p.rowIndex})"><i class="bi bi-pencil-square"></i></button>
+                   <button class="btn btn-sm btn-link p-0" style="color:inherit" onclick="deletePatient(${p.rowIndex})"><i class="bi bi-trash"></i></button>
+                 </td>
+               </tr>`;
+          });
+        }
+
+        // Leitos
+        const unavBody = document.getElementById('unavailableBody');
+        unavBody.innerHTML = "";
+        if(data.footer.unavailable.length === 0) unavBody.innerHTML = "<tr><td colspan='2' class='text-center text-muted'>Nenhum.</td></tr>";
+        else data.footer.unavailable.forEach(u => unavBody.innerHTML += `<tr><td class="fw-bold text-danger">${u.leito}</td><td>${u.motivo}</td></tr>`);
+
+        // Disponibilidades
+        const availGrid = document.getElementById('availabilitiesGrid');
+        availGrid.innerHTML = "";
+        if(data.footer.availabilities.length === 0) availGrid.innerHTML = "<div class='text-muted small text-center mt-3'>Sem dados.</div>";
+        else data.footer.availabilities.forEach(grp => {
+           let quartosHtml = grp.quartos.map(q => `<div class="avail-item">${q}</div>`).join("");
+           availGrid.innerHTML += `<div class="avail-col"><div class="avail-title">${grp.andar}</div>${quartosHtml}</div>`;
+        });
+
+        // Transferencias
+        const transBody = document.getElementById('transfersBody');
+        transBody.innerHTML = "";
+        if(data.footer.transfers.length === 0) transBody.innerHTML = "<tr><td colspan='3' class='text-muted text-center p-3'>Nenhum registro.</td></tr>";
+        else data.footer.transfers.forEach(t => {
+           transBody.innerHTML += `<tr><td class="fw-bold text-truncate" style="max-width:150px">${t.nome}</td><td><span class="badge bg-light text-dark border">${t.de}</span> &rarr; <span class="badge bg-light text-dark border">${t.para}</span></td><td class="text-wrap small">${t.obs||''}</td></tr>`;
+        });
+
+        renderIndicators(data.stats, data.footer.transfers.length);
+        document.getElementById('loading').style.display = 'none';
+      }
+
+      function renderIndicators(stats, totalTransfers) {
+        const container = document.getElementById('statsContainer');
+        container.innerHTML = "";
+        container.innerHTML += createStatCard('Total de Pacientes', stats.total, 'bi-people-fill', 'border-primary');
+        container.innerHTML += createStatCard('Total Transferências', totalTransfers, 'bi-arrow-left-right', 'border-warning');
+        container.innerHTML += createStatCard('Internações Leitos A', stats.leitosA_endsB, 'bi-hospital', 'border-danger', 'Leitos A em B');
+        container.innerHTML += createStatCard('Internações Leitos B', stats.leitosB_endsA, 'bi-hospital', 'border-success', 'Leitos B em A');
+        for (let [key, count] of Object.entries(stats.byColor)) {
+           if (count > 0) {
+             let label = availableTypes.find(t => t.key === key)?.label || key;
+             let colorHex = availableTypes.find(t => t.key === key)?.hex || '#ccc';
+             container.innerHTML += createStatCard(label, count, 'bi-tag-fill', '', '', colorHex);
+           }
+        }
+      }
+
+      function createStatCard(title, value, icon, borderClass, subtext='', customColor='') {
+        let borderStyle = customColor ? `border-left: 5px solid ${customColor}` : '';
+        let iconColor = customColor ? `color: ${customColor}` : '';
+        return `<div class="stat-card ${borderClass}" style="${borderStyle}"><div class="stat-title">${title}</div><div class="stat-value">${value}</div>${subtext ? `<div class="stat-sub">${subtext}</div>` : ''}<i class="bi ${icon} stat-icon" style="${iconColor}"></i></div>`;
+      }
+
+      // --- CÓPIA DE LEITOS (MODAL) ---
+      const copyModal = new bootstrap.Modal(document.getElementById('copyBedsModal'));
+      
+      function openCopyBedsModal() {
+        const sel = document.getElementById('copySourceDate');
+        sel.innerHTML = "";
+        allSheetsCache.forEach(s => {
+           // Não permitir copiar da própria data atual
+           if(s !== currentSheet) {
+             let opt = document.createElement('option');
+             opt.value = s; opt.text = s;
+             sel.add(opt);
+           }
+        });
+        copyModal.show();
+      }
+
+      function confirmCopyBeds() {
+        const sourceSheet = document.getElementById('copySourceDate').value;
+        if(!sourceSheet) return;
+        
+        document.getElementById('loading').style.display = 'flex';
+        copyModal.hide();
+        
+        google.script.run
+          .withFailureHandler(onFailure)
+          .withSuccessHandler(msg => {
+             alert(msg);
+             loadSheetData(); // Atualiza
+          })
+          .importUnavailableBeds(currentSheet, sourceSheet);
+      }
+
+      // --- LÓGICA DE IMPORTAÇÃO E CONCILIAÇÃO ---
+      const importModal = new bootstrap.Modal(document.getElementById('importModal'));
+      let comparisonDataCache = null;
+
+      function openImportModal() {
+        if(!currentSheet) return alert("Selecione uma data primeiro.");
+        document.getElementById('importDateDisplay').innerText = currentSheet;
+        document.getElementById('comparisonBody').innerHTML = `<tr><td colspan="5" class="text-center p-4 text-muted"><i class="bi bi-cloud-arrow-down fs-3"></i><br>Clique em "Analisar Dados" para comparar com o Bloco Cirúrgico.</td></tr>`;
+        document.getElementById('btnExecuteSync').disabled = true;
+        comparisonDataCache = null;
+        importModal.show();
+      }
+
+      function runAnalysis() {
+        document.getElementById('comparisonBody').innerHTML = `<tr><td colspan="5" class="text-center p-4"><div class="spinner-border spinner-border-sm text-primary"></div> Comparando dados...</td></tr>`;
+        
+        google.script.run
+          .withFailureHandler(err => { 
+             document.getElementById('comparisonBody').innerHTML = `<tr><td colspan="5" class="text-danger text-center p-3">Erro: ${err.message}</td></tr>`; 
+          })
+          .withSuccessHandler(renderComparison)
+          .compareSurgicalData(currentSheet);
+      }
+
+      function renderComparison(data) {
+        comparisonDataCache = data; // Cache para processamento
+        const tbody = document.getElementById('comparisonBody');
+        tbody.innerHTML = "";
+
+        let hasItems = false;
+
+        // 1. NOVOS
+        data.newPatients.forEach((p, idx) => {
+          hasItems = true;
+          let rowId = `new-${idx}`;
+          tbody.innerHTML += `
+            <tr class="table-success bg-opacity-10">
+              <td class="text-center"><input type="checkbox" class="import-check" data-type="new" data-index="${idx}" checked></td>
+              <td><span class="badge bg-success">NOVO</span></td>
+              <td class="fw-bold">${p.nome}</td>
+              <td class="small text-muted">
+                 ${p.equipe} | ${p.convenio} | ${p.hrCir}
+              </td>
+              <td class="text-end text-muted small">Inserir</td>
+            </tr>
+          `;
+        });
+
+        // 2. DIVERGENTES (Alterações)
+        data.diffPatients.forEach((p, idx) => {
+          hasItems = true;
+          let diffsHtml = p.changes.map(ch => `
+             <div class="d-flex align-items-center mb-1">
+                <span class="fw-bold me-2" style="width:60px; font-size:10px;">${ch.label}:</span>
+                <span class="text-decoration-line-through text-muted me-2 small">${ch.old || '-'}</span>
+                <i class="bi bi-arrow-right-short text-muted me-2"></i>
+                <span class="fw-bold text-purple">${ch.new || '-'}</span>
+                <div class="form-check form-switch ms-auto">
+                   <input class="form-check-input diff-field-check" type="checkbox" 
+                          data-patient-index="${idx}" data-field="${ch.field}" data-new-val="${ch.new}" checked 
+                          title="Aceitar esta alteração">
+                </div>
+             </div>
+          `).join('');
+
+          tbody.innerHTML += `
+            <tr>
+              <td class="text-center"><input type="checkbox" class="import-check" data-type="diff" data-index="${idx}" checked></td>
+              <td><span class="badge bg-purple text-white">ALTERADO</span></td>
+              <td class="fw-bold">${p.nome}</td>
+              <td>${diffsHtml}</td>
+              <td class="text-end"><small class="text-purple">Atualizar</small></td>
+            </tr>
+          `;
+        });
+
+        // 3. AUSENTES (Sumiu da origem)
+        data.missingPatients.forEach((p, idx) => {
+          hasItems = true;
+          tbody.innerHTML += `
+            <tr class="table-danger bg-opacity-10">
+              <td class="text-center"><input type="checkbox" class="import-check" data-type="missing" data-index="${idx}"></td> <td><span class="badge bg-danger">REMOVIDO</span></td>
+              <td class="fw-bold text-decoration-line-through">${p.nome}</td>
+              <td class="small text-danger">Não consta na lista cirúrgica atual.</td>
+              <td class="text-end text-danger small">Excluir?</td>
+            </tr>
+          `;
+        });
+
+        if (!hasItems) {
+          tbody.innerHTML = `<tr><td colspan="5" class="text-center p-5 text-success"><i class="bi bi-check-circle fs-1"></i><br>Tudo sincronizado! Nenhuma diferença encontrada.</td></tr>`;
+          document.getElementById('btnExecuteSync').disabled = true;
+        } else {
+          document.getElementById('btnExecuteSync').disabled = false;
+        }
+      }
+
+      function toggleAllImport(source) {
+        document.querySelectorAll('.import-check').forEach(c => c.checked = source.checked);
+      }
+
+      function executeSync() {
+        if(!comparisonDataCache) return;
+
+        let actions = {
+          toCreate: [],
+          toUpdate: [],
+          toDelete: []
+        };
+
+        // Coleta Selecionados
+        document.querySelectorAll('.import-check:checked').forEach(chk => {
+          let type = chk.getAttribute('data-type');
+          let idx = parseInt(chk.getAttribute('data-index'));
+
+          if (type === 'new') {
+            actions.toCreate.push(comparisonDataCache.newPatients[idx]);
+          } 
+          else if (type === 'missing') {
+            actions.toDelete.push(comparisonDataCache.missingPatients[idx].rowIndex);
+          }
+          else if (type === 'diff') {
+            // Para updates, precisamos ver quais campos ESPECÍFICOS foram aceitos
+            let patientDiff = comparisonDataCache.diffPatients[idx];
+            let acceptedChanges = [];
+            
+            // Busca os switches individuais desta linha
+            let fieldSwitches = document.querySelectorAll(`.diff-field-check[data-patient-index="${idx}"]:checked`);
+            
+            fieldSwitches.forEach(sw => {
+               acceptedChanges.push({
+                 field: sw.getAttribute('data-field'),
+                 newVal: sw.getAttribute('data-new-val')
+               });
+            });
+
+            if (acceptedChanges.length > 0) {
+              actions.toUpdate.push({
+                rowIndex: patientDiff.rowIndex,
+                changes: acceptedChanges
+              });
+            }
+          }
+        });
+
+        if (actions.toCreate.length === 0 && actions.toUpdate.length === 0 && actions.toDelete.length === 0) {
+          return alert("Nenhuma ação selecionada.");
+        }
+
+        // Envia para o Backend
+        document.getElementById('loading').style.display = 'flex';
+        importModal.hide();
+
+        google.script.run
+          .withFailureHandler(onFailure)
+          .withSuccessHandler(msg => {
+             alert(msg);
+             loadSheetData(); // Recarrega a tela
+          })
+          .processImportActions(currentSheet, actions);
+      }
+
+      function fetchSurgicalData() {
+        document.getElementById('importPreviewBody').innerHTML = `<tr><td colspan="5" class="text-center"><div class="spinner-border spinner-border-sm"></div> Buscando...</td></tr>`;
+        google.script.run.withFailureHandler(err => { document.getElementById('importPreviewBody').innerHTML = `<tr><td colspan="5" class="text-danger">Erro: ${err.message}</td></tr>`; }).withSuccessHandler(showImportPreview).getSurgicalData(currentSheet);
+      }
+
+      function showImportPreview(data) {
+        importedPatientsCache = data;
+        const tbody = document.getElementById('importPreviewBody');
+        tbody.innerHTML = "";
+        if (data.length === 0) { tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted">Nenhuma cirurgia encontrada para esta data.</td></tr>`; return; }
+        data.forEach(p => {
+           tbody.innerHTML += `<tr><td class="fw-bold text-primary">${p.nome}</td><td>${p.hrCir}</td><td>${p.convenio}</td><td>${p.equipe}</td><td>${p.telefone}</td></tr>`;
+        });
+        document.getElementById('btnConfirmImport').disabled = false;
+      }
+
+      function confirmImport() {
+        if (importedPatientsCache.length === 0) return;
+        document.getElementById('loading').style.display = 'flex';
+        importModal.hide();
+        google.script.run.withFailureHandler(onFailure).withSuccessHandler(msg => { alert(msg); loadSheetData(); }).importBatchPatients(currentSheet, importedPatientsCache);
+      }
+
+      // --- Uteis ---
+      function isDarkColor(hex) {
+        if(!hex || hex === '#ffffff') return false;
+        const darks = ['#595959', '#274e13', '#ff0000', '#2c3e50', '#000000']; 
+        return darks.includes(hex.toLowerCase());
+      }
+
+      function changeStatus(selectElem, rowIndex) {
+        const newType = selectElem.value;
+        const config = availableTypes.find(t => t.key === newType);
+        if(config) {
+          const tr = document.getElementById(`row-${rowIndex}`);
+          tr.style.backgroundColor = config.hex;
+          let textColor = isDarkColor(config.hex) ? '#ffffff' : '#000000';
+          tr.style.color = textColor;
+          selectElem.style.borderColor = textColor;
+          google.script.run.updatePatientType(currentSheet, rowIndex, newType);
+        }
+      }
+
+      function showView(viewName) {
+        document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
+        document.getElementById('btn-view-' + viewName).classList.add('active');
+        document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active-view'));
+        document.getElementById('view-' + viewName).classList.add('active-view');
+      }
+
+      // CRUD
+      const modal = new bootstrap.Modal(document.getElementById('patientModal'));
+      function openModal() { document.getElementById('patientForm').reset(); document.getElementById('rowIndex').value=""; document.getElementById('tipoCor').value="NORMAL"; modal.show(); }
+      
+      function editPatient(idx) {
+         const p = window.globalPatients.find(x => x.rowIndex === idx);
+         if(!p) return;
+         document.getElementById('rowIndex').value = p.rowIndex;
+         document.getElementById('nome').value = p.nome;
+         document.getElementById('leito').value = p.leito;
+         document.getElementById('prevLeito').value = p.prevLeito;
+         document.getElementById('convenio').value = p.convenio;
+         document.getElementById('equipe').value = p.equipe;
+         document.getElementById('guia').value = p.guia;
+         document.getElementById('statusGuia').value = p.status;
+         document.getElementById('hrCir').value = p.hrCir;
+         document.getElementById('hrInt').value = p.hrInt;
+         document.getElementById('obs').value = p.obs;
+         document.getElementById('telefone').value = p.telefone;
+         let tipo = p.tipo || "NORMAL";
+         if(!document.querySelector(`#tipoCor option[value='${tipo}']`)) tipo = "NORMAL";
+         document.getElementById('tipoCor').value = tipo;
+         modal.show();
+      }
+
+      function submitForm() {
+         const form = {
+           rowIndex: document.getElementById('rowIndex').value,
+           nome: document.getElementById('nome').value,
+           leito: document.getElementById('leito').value,
+           prevLeito: document.getElementById('prevLeito').value,
+           convenio: document.getElementById('convenio').value,
+           equipe: document.getElementById('equipe').value,
+           guia: document.getElementById('guia').value,
+           status: document.getElementById('statusGuia').value,
+           hrCir: document.getElementById('hrCir').value,
+           hrInt: document.getElementById('hrInt').value,
+           obs: document.getElementById('obs').value,
+           telefone: document.getElementById('telefone').value,
+           tipoCor: document.getElementById('tipoCor').value
+         };
+         document.getElementById('loading').style.display = 'flex';
+         google.script.run.withFailureHandler(onFailure).withSuccessHandler(() => { modal.hide(); loadSheetData(); }).savePatient(currentSheet, form);
+      }
+
+      function deletePatient(idx) {
+        if(confirm("Excluir?")) {
+           document.getElementById('loading').style.display = 'flex';
+           google.script.run.withFailureHandler(onFailure).withSuccessHandler(() => loadSheetData()).deletePatient(currentSheet, idx);
+        }
+      }
+    </script>
+  </body>
+</html>
