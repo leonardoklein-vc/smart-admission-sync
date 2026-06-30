@@ -1,0 +1,319 @@
+<style>
+  :root {
+    /* Variáveis do Tema Base (Default) */
+    --sidebar-bg: #2c3e50;
+    --sidebar-text: #ecf0f1;
+    --primary-color: #0d6efd;
+    --bg-light: #f4f6f9;
+    --text-main: #212529;
+    --card-bg: #ffffff;
+    --header-bg: #e9ecef;
+    --border-color: #dee2e6;
+  }
+
+  /* --- TEMAS (Gerenciador) --- */
+  body.theme-dark {
+    --sidebar-bg: #000000;
+    --sidebar-text: #dcdcdc;
+    --primary-color: #0d6efd;
+    --bg-light: #121212;
+    --text-main: #e0e0e0;
+    --card-bg: #1e1e1e;
+    --header-bg: #2d2d2d;
+    --border-color: #444;
+  }
+  body.theme-green { /* Tema SAMIS */
+    --sidebar-bg: #145214;
+    --sidebar-text: #fff;
+    --primary-color: #198754;
+    --bg-light: #e8f5e9;
+    --text-main: #1b1b1b;
+    --card-bg: #fff;
+    --header-bg: #c8e6c9;
+    --border-color: #a5d6a7;
+  }
+  body.theme-purple {
+    --sidebar-bg: #4a148c;
+    --sidebar-text: #f3e5f5;
+    --primary-color: #9c27b0;
+    --bg-light: #f3e5f5;
+    --text-main: #212529;
+    --card-bg: #fff;
+    --header-bg: #e1bee7;
+    --border-color: #ce93d8;
+  }
+  body.theme-contrast {
+    --sidebar-bg: #000;
+    --sidebar-text: #ffeb3b;
+    --primary-color: #000;
+    --bg-light: #fff;
+    --text-main: #000;
+    --card-bg: #fff;
+    --header-bg: #ffeb3b;
+    --border-color: #000;
+  }
+
+  /* --- LAYOUT GLOBAL --- */
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--bg-light);
+    color: var(--text-main);
+    font-size: 12px;
+    overflow: hidden; /* Impede scroll na página inteira */
+    margin: 0; padding: 0;
+  }
+  
+  /* Sidebar Fixa */
+  .sidebar {
+    height: 100vh;
+    width: 250px;
+    position: fixed;
+    top: 0; left: 0;
+    background: var(--sidebar-bg);
+    color: var(--sidebar-text);
+    padding: 15px;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+    transition: background 0.3s;
+  }
+  
+  .nav-link {
+    color: rgba(255,255,255,0.7);
+    cursor: pointer;
+    margin-bottom: 5px;
+    border-radius: 4px;
+    transition: all 0.2s;
+    display: flex; align-items: center;
+    padding: 8px 10px;
+  }
+  .nav-link:hover { background: rgba(255,255,255,0.1); color: #fff; }
+  .nav-link.active { background: var(--primary-color); color: #fff; font-weight: 600; }
+
+  /* Legenda sem rolagem */
+  .legend-box {
+    background: rgba(0,0,0,0.2);
+    border-radius: 6px;
+    padding: 10px;
+    margin-top: auto; 
+    font-size: 11px;
+    border: 1px solid rgba(255,255,255,0.05);
+  }
+  .legend-item { display: flex; align-items: center; margin-bottom: 5px; color: #ddd; }
+  .legend-color { width: 14px; height: 14px; border-radius: 3px; margin-right: 10px; border: 1px solid rgba(255,255,255,0.2); flex-shrink: 0; }
+
+  /* Main Area */
+  .main-content {
+    margin-left: 250px; /* Largura da sidebar */
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--bg-light);
+    transition: background 0.3s;
+  }
+
+  /* Top Bar (Fixa) */
+  .top-bar {
+    padding: 10px 20px;
+    border-bottom: 1px solid var(--border-color);
+    background-color: var(--bg-light);
+    flex-shrink: 0; /* Não encolhe */
+  }
+
+  /* Content Area (Onde as tabelas vão e SCROLLAM) */
+  .content-area {
+    flex: 1; /* Ocupa todo o espaço que sobra */
+    padding: 10px 20px;
+    overflow: hidden; /* Segura o scroll dos filhos diretos */
+    display: flex;
+    flex-direction: column;
+    min-height: 0; /* CRÍTICO para scroll no flex child */
+  }
+
+  /* Bottom Bar (Rodapé Fixo) */
+  .bottom-bar {
+    height: 40px;
+    background: #fff;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    font-size: 11px;
+    color: #666;
+    flex-shrink: 0; /* Não encolhe */
+    box-shadow: 0 -2px 5px rgba(0,0,0,0.02);
+  }
+
+  /* Botões de Tema */
+  .theme-btn {
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    border: 2px solid #ccc;
+    cursor: pointer;
+    display: inline-block;
+    margin-right: 6px;
+    transition: transform 0.2s;
+  }
+  .theme-btn:hover { transform: scale(1.2); }
+
+  /* --- ESTRUTURA DAS VIEWS --- */
+  .view-section {
+    display: none; 
+    height: 100%;
+    flex-direction: column;
+  }
+  .view-section.active-view {
+    display: flex;
+  }
+
+  /* Cards */
+  .card-view {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    height: 100%;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+    color: var(--text-main);
+  }
+  
+  .panel-header {
+    padding: 10px 15px;
+    background: var(--header-bg);
+    border-bottom: 1px solid var(--border-color);
+    font-weight: 700;
+    font-size: 12px;
+    text-transform: uppercase;
+    display: flex; align-items: center;
+    color: var(--text-main);
+  }
+
+  /* Tabelas */
+  .table-compact {
+    font-size: 12px;
+    background: var(--card-bg);
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    color: var(--text-main);
+  }
+  .table-compact thead th {
+    background-color: var(--header-bg);
+    color: var(--text-main);
+    font-weight: 700;
+    padding: 8px 6px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    border-bottom: 2px solid var(--border-color);
+    text-transform: uppercase;
+    font-size: 11px;
+  }
+  .table-compact tbody td {
+    padding: 4px 6px;
+    border-bottom: 1px solid var(--border-color);
+    vertical-align: middle;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 220px;
+  }
+  
+  /* --- CORREÇÃO DO SELECTOR DE STATUS --- */
+  .status-select { 
+    font-size: 11px; 
+    padding: 2px 4px; 
+    border: 1px solid rgba(0,0,0,0.2); 
+    border-radius: 4px; 
+    width: 100%; 
+    cursor: pointer; 
+    font-weight: 600; 
+    appearance: none; 
+    text-align: center; 
+    background-image: none; 
+  }
+  .status-select:focus { outline: none; border-color: var(--primary-color); }
+  
+  /* FORÇA A LISTA DE OPÇÕES A SER SEMPRE BRANCA COM TEXTO PRETO */
+  .status-select option {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  /* Grid Disponibilidades */
+  .avail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+    gap: 10px;
+    padding: 10px;
+  }
+  .avail-col {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 8px;
+    text-align: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  }
+  .avail-title { font-weight: bold; color: var(--primary-color); font-size: 12px; border-bottom: 2px solid var(--border-color); margin-bottom: 5px; padding-bottom: 3px; }
+  .avail-item { font-size: 12px; color: var(--text-main); margin-bottom: 2px; font-weight: 500; }
+  
+  /* Inputs do Modal */
+  .form-control-sm, .form-select-sm {
+    font-size: 11px;
+  }
+
+  /* --- ESTILO DOS CARDS DE INDICADORES (Novo) --- */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 15px;
+    padding: 20px;
+    overflow-y: auto; /* Permite rolar se tiver muitos cards */
+  }
+  .stat-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+    transition: transform 0.2s;
+  }
+  .stat-card:hover { transform: translateY(-2px); }
+  .stat-title { font-size: 12px; font-weight: 600; text-transform: uppercase; color: #888; margin-bottom: 10px; z-index: 2; }
+  .stat-value { font-size: 28px; font-weight: 700; color: var(--text-main); z-index: 2; }
+  .stat-icon { position: absolute; right: 15px; bottom: 15px; font-size: 40px; opacity: 0.1; z-index: 1; color: var(--text-main); }
+  .stat-sub { font-size: 11px; margin-top: 5px; opacity: 0.7; }
+
+  /* --- CORES PERSONALIZADAS CIRÚRGICAS --- */
+  .btn-surgical { 
+    background-color: #6caa4a; 
+    border-color: #5a8f3d; 
+    color: #fff; 
+  }
+  .btn-surgical:hover { 
+    background-color: #5a8f3d; 
+    border-color: #497532; 
+    color: #fff; 
+  }
+  .bg-surgical { 
+    background-color: #6caa4a !important; 
+    color: #fff !important; 
+  }
+
+  /* COR ROXA PARA DIVERGÊNCIAS */
+  .text-purple { color: #6f42c1 !important; }
+  .bg-purple { background-color: #6f42c1 !important; }
+
+  /* Ajuste no Modal de Importação */
+  .import-check { cursor: pointer; transform: scale(1.2); }
+
+</style>
